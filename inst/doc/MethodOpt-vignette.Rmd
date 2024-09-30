@@ -1,0 +1,144 @@
+---
+title: "MethodOpt: A graphical user interface for advanced method optimization"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{MethodOpt: A graphical user interface for advanced method optimization}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Authors: Benjamin Luke & Stephanie Gamble
+
+Savannah River National Laboratory
+
+Contact [stephanie.gamble\@srnl.doe.gov](mailto:stephanie.gamble@srnl.doe.gov){.email}
+
+The goal of MethodOpt is to employ a sophisticated multi-objective, multivariate method optimization technique in the convenient context of a graphical user interface (GUI). It offers experimental design, plotting, and analysis tools to lead the user through the entire method optimization procedure.
+
+## Installation
+
+
+The most convenient way to install the development version of MethodOpt from [CRAN](https://cran.r-project.org/) is by calling
+
+`{install.packages("MethodOpt")}`
+
+in RStudio. (Note we assume the user has RStudio installed on their hardware.)
+
+## Example
+
+In this vignette we will cover a comprehensive example demonstrating the basic procedure when using MethodOpt. We will use data performed in gas-chromatography mass-spectrometry (GCMS) method optimization as our test case.
+
+After installing MethodOpt, the user can initiate the GUI by calling
+
+`{MethodOpt::MethodOpt()}`
+
+The Shiny session will open the GUI screen to the fractional factorial experimental design (FFD) tab.
+
+![Opening screen in MethodOpt.](../man/figures/program_opening_scnsht.png){width="650"}
+
+### Fractional Factorial Design
+
+The first step in the method optimization process is to generate a fractional factorial experimental design (FFD). This allows a screening process to be performed in order to identify parameters that significantly impact the desired objectives (more on this below). The *fractional* factorial design also allows for a substantially reduced number of screening methods to be performed compared to a full factorial design.
+
+From the FFD tab screen, the user should input all parameters that are experimentally relevant for the optimization. In the case of our GCMS test case, we input split ratio, column flow, inlet temperature, injection volume, auxiliary line temperature, oven ramp rate, and film thickness. We also input each parameter's corresponding high and low values. That is, a range of values where we predict the true optimal value will lie. This range should be an informed estimate, which an experienced scientist can usually make. Pressing "Generate FFD" will render the FFD.
+
+![Fractional factorial design with example data from a GCMS experiment.](../man/figures/FFD_scnsht.png){width="650"}
+
+Note a mathematical and experimental version is available under separate subtabs. The mathematical table is a more traditional FFD with "+1" and "-1", indicating highs and lows. The experimental version contains actual high and low data as indicated by the user. We expect this table to be much more useful for the practicing scientist.
+
+As can also be seen, input values are also tabulated in the sidebar. To facilitate a more convenient experience, any values in the table can be deleted or modified within the program (so as to avoid having to quit MethodOpt and starting all over). Simply double click any value in the table to modify it. The change will be internally recorded, but a new table will have to be rendered for the table to reflect the change. A row of data can also be entirely deleted by highlighting that row and clicking "Delete Row."
+
+Once the table is finalized by the user, the table can be downloaded in a Comma Separated Value (CSV) file by selecting "Download FFD Experimental." This should make it convenient for the experimentalist to print the design and use it in a convenient way with one's equipment. *In any case, the table should be downloaded*, as it will be uploaded to the program at a later time during the analysis of the screening data.
+
+### Analysis of Variance Test
+
+An analysis of variance (ANOVA) test should be carried out following the completion of the screening experiments. To do this, the user should open MethodOpt again by `MethodOpt::MethodOpt()` and navigate to the "Data Analysis" tab.
+
+![Analysis tab upon opening.](../man/figures/analysis_tab_scnsht.png){width="650"}
+
+At the top of the analysis tab there is a field to upload data. Selecting "Browse..." will open an upload handler. All of the screening data should be uploaded by simultaneously selecting multiple files. For traditional spectra data, this data will be intensity versus time (that is, time on the x-axis and intensity on the y-axis). The format of the raw data is important. Only CSV files are accepted; a non-CSV file will be rejected. The program is trained to read the first column of the file as the independent variable (i.e., x values) and the second column as the dependent variable, and this must also be considered in data preparation. There is, however freedom to delay the start of the data in the CSV file by an arbitrary number of rows. See the image of the example data below.
+
+![Example raw data suitably formatted for input into MethodOpt. Note that an arbitrary number of rows may be used for comments or other information before the time and intensity data begins. Thereafter, the data should have no row breaks or unrelated information. (Note the sample data extends well beyond row 31.)](../man/figures/data_sample_scnsht-01.png){width="136"}
+
+Uploaded data will be tabulated in the order it was input. This order should reflect the order in which the experiments were done according to the FFD. If it does not, the files should be either reorganized before input, or they can be reorganized in the table by clicking and dragging a file's index to its appropriate location. It is recommended, however, to upload the data in the proper order from the beginning.
+
+There is a series of subtabs within the Data Analysis tab. These are "Plot," "Identify Peaks," "Objectives," "ANOVA," and "Optimization." We will consider each in turn.
+
+#### Plot
+
+The Plot tab is primarily a visual tool. By selecting (highlighting) a file from the table, its plot is automatically rendered. If the importance of data organization was not obvious before, it will be now. The plot will display the first column of the selected file's data as the x-axis and the second column as the y-axis. There is also a sidebar panel that contains some data manipulation tools. These include options to skip rows (skip the first *n* rows of the files being read; this must be used if there are non-data rows at the start of data files, as described above), change x- and y-axis labels, and manipulate the data by applying a logarithmic y-axis scale, subtracting the (calculated) baseline from the original data, and overlaying the baseline in red.
+
+![Sample plot generated in MethodOpt. Two rows have been skipped in the original data (the default). The intensity is plotted with a logarithmic scale and the baseline is overlayed.](../man/figures/plots_log_bsln_scnsht.png){width="650"}
+
+Any of the plots may be downloaded as a PNG image. Each plot can be downloaded individually as needed by selecting "Download Plot," or all of the plots can be downloaded in a compressed file by selecting "Download All." If the user selects "Download All," every plot will be downloaded according to the settings applied in the sidebar.
+
+The only input in the Plot tab that the user must consider is the row skip. This will be considered in the rest of the analyses in the program. Otherwise interaction with the Plot tab is optional (though probably useful).
+
+#### Identify Peaks
+
+The peaks of the input data must be properly identified in order to calculate the objectives in the next section. There are two ways to do this. One way is by means of a peak finding algorithm built into MethodOpt. It will identify *n* peaks, where *n* is an integer input by the user. Selecting any file will render the file's plot with the peaks identified by red dots, and a table listing the peaks with corresponding times. The peak finding algorithm is not perfect, however, and will sometimes (perhaps frequently) misidentify correct peaks. This will happen more often if the analytes are not easily distinguishable from the rest of the signal. Because of this limitation, there is the option to select from the table any misidentified peaks, delete them, and advance to the next viable peak found by the algorithm. However, there is a limited number of alternates, and it is possible that the proper peaks may still not be identified by the time the list of "backups" is exhausted, though this is hopefully unlikely if the spectra are clean.
+
+The (strongly) preferred method of peak identification is by uploading a retention time file. This will streamline the process significantly compared to the first method. As with other uploaded files to MethodOpt, there are formatting requirements to be able to properly read the retention times. The retention time file must also be CSV; the first row must list the analyte names, and the first column must list the method name (that is, some identifier to specify which set of parameters was used (formally, the "method") in the screening process to generate its data). See the image of the example data.
+
+![Example of retention time format. Analyte names are listed on the first row; method indicators are listed on the first column. The rest of the information is the retention times in the case study.](../man/figures/rt_sample_scnsht.png){width="650"}
+
+Retention time data will be uploaded by selecting "Browse..." in the sidebar and selecting the appropriate file. Once the upload is complete (the program will flag the file should the format be incorrect in an obvious way), one can select "SEARCH" and the peaks will be identified on each data set. Each plot can be rendered with peaks marked in red by selecting its file from the table.
+
+![Peaks identified using an uploaded retention time file.](../man/figures/peaks_scnsht.png){width="650"}
+
+#### Objectives
+
+After peaks are identified, the proper objectives should be selected. There are several objective options built into MethodOpt. Any number may be selected simultaneously, with one caveat. Conflicting objectives---namely, minimize peak width and maximize peak area---may not be selected concurrently. Selecting objectives in the sidebar will automatically render their values.
+
+Maximizing the retention time separation requires an additional input---specifying which retention times to separate. The user should be sure to select two adjacent analytes from the corresponding drop down box. Up to three pairs of retention times may be separated.
+
+![Objective tab with sample data. Maximize peak height and minimize peak widths objectives are selected.](../man/figures/obj_scnsht.png){width="650"}
+
+#### ANOVA
+
+The analysis of variance (ANOVA) test is the next step in the procedure following the selection of the objectives, accomplished under the ANOVA subtab. The user is required to upload the FFD used in the screening experiments. This should ideally be identical to the FFD that the user downloaded from MethodOpt in the first stage of the process. (Here again, the format of the uploaded file is very important.)
+
+The user should select an alpha value, which indicates how confidently the significant parameters should be identified. Pressing "Run ANOVA" will calculate the significance status of each parameter for each objective.
+
+![ANOVA test on sample data. See that certain parameters are significant for certain objectives but not others (e.g., film thickness).](../man/figures/anova_scnsht.png){width="650"}
+
+### Box-Behnken Experimental Design
+
+The third phase of the process is to create a three level Box-Behnken experimental design (BBD). This is done in a way very similar to creating the FFD. The significant parameters identified from the ANOVA test will be input along with their low, middle, and high values. The low, middle, and high values represent an informed range where the true optimum will be, much like the low and high values from the FFD. When all of the parameters are input with their corresponding low, middle, and high values, the BBD can be generated by selecting "Generate BBD."
+
+Parameters and their numeric values can also be modified by double clicking their entries in the table where they are listed. They can also be deleted entirely by highlighting the parameter's row and selecting "Delete Row." The BBD must be regenerated to reflect these changes, however.
+
+This table should be downloaded like the FFD was, as it will be uploaded in the next stage. Experiments should be run according to each method's instructions and data should be saved in the same format as was required for the above ANOVA section.
+
+![Sample BBD using the parameters identified as significant from the ANOVA test.](../man/figures/BBD_scnsht.png){width="650"}
+
+### Optimization
+
+When the data has been collected from the BBD experiments, the user is ready to proceed to the last part of the optimization procedure---the optimization itself. This is done by navigating back to the "Data Analysis" tab. A substantial amount of the procedure for the optimization overlaps with what has already been said in the Analysis of Variance sections above, so to avoid repetition, this section will be abbreviated with references to what has already been written.
+
+The user begins by uploading the raw data from the BBD experiments. This will mimic the procedure described in the Plot section above. Then the user will proceed to identify the proper peaks. This can be done by using the peak search algorithm in MethodOpt or by the preferred method of uploading a properly formatted retention time CSV file. This also copies the description in the Identify Peaks section. The user will then select objectives just as described earlier.
+
+Now the procedure shifts gears from that described in the Analysis of Variance section. Rather than using the prepared information from the Plot, Identify Peaks, and Objectives tabs to perform an ANOVA test, the user will skip the ANOVA subtab and use the Optimization tab.
+
+The Optimization tab has a side bar with a couple fields. The first step is to upload the BBD file that was generated in the earlier section. Of course, one doesn't have to submit exactly the BBD that was generated by MethodOpt, but the format must be identical, so using the one generated by MethodOpt makes things easy. Error messages will be thrown if the format is erroneous.
+
+Also in the sidebar is a physical limit input. What this means is that any of the parameters may have physical ranges of validity, either because of instrument/machine limits or real-world physical limitations. These ranges must be specified in the optimization process because the unbounded solution may fall outside of these ranges if not otherwise considered. Any number of parameters can be selected from the input box. (The parameters are programatically obtained by reading the BBD.) The default upper and lower boundaries (i.e., the ranges of validity) are determined by the lows and highs from the BBD. These can be edited by double clicking their values and adjusting.
+
+Once the BBD is uploaded and all necessary physical limits are input, the parameters can be optimized by selecting "Optimize." If no physical limits are input, then only an unbounded solution will render. If limits are input, then both an unbounded and a bounded solution will render. Additionally, the objective prediction at the optimum value will be displayed (this is for the bounded solution, if available---otherwise it is for the unbounded solution).
+
+![Optimization results for sample data. Note that bounded and unbounded solutions were given since the physical limits were specified.](../man/figures/opt_scnsht.png){width="650"}
+
+This completes the optimization process!
+
+
+
+Notice: These data were produced by Battelle Savannah River Alliance, LLC under Contract No 89303321CEM000080 with the Department of Energy. During the period of commercialization or such other time period specified by DOE, the Government is granted for itself and others acting on its behalf a nonexclusive, paid-up, irrevocable worldwide license in this data to reproduce, prepare derivative works, and perform publicly and display publicly, by or on behalf of the Government. Subsequent to that period, the Government is granted for itself and others acting on its behalf a nonexclusive, paid-up, irrevocable worldwide license in this data to reproduce, prepare derivative works, distribute copies to the public, perform publicly and display publicly, and to permit others to do so. The specific term of the license can be identified by inquiry made to Contract or DOE. NEITHER THE UNITED STATES NOR THE UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR EMPLOYEES, MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LEGAL LIABILITY OR RESPONSIBILITY FOR THE ACCURACY, COMPLETENESS, OR USEFULNESS OF ANY DATA, APPARATUS, PRODUCT, OR PROCESS DISCLOSED, OR REPRESENTS THAT ITS USE WOULD NOT INFRINGE PRIVATELY OWNED RIGHTS.
+
+©2024 Battelle Savannah River Alliance, LLC
